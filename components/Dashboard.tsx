@@ -25,6 +25,8 @@ export default function Dashboard() {
     jobRole: 'All',
     overtime: 'All',
     businessTravel: 'All',
+    gender: 'All',
+    attrition: 'All',
   });
 
   // Dynamically filter active records

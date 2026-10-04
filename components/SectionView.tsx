@@ -3,7 +3,15 @@
 import React from 'react';
 import { AnalysisSection, EmployeeRecord, KPIMetrics, ThemeMode } from '@/lib/types';
 import { computeRetentionPriorities, computeStatisticalTests } from '@/lib/calculations';
-import { AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
+import {
+  getCommuteAttrition,
+  getDepartmentAttrition,
+  getIncomeByAttrition,
+  getOvertimeAttrition,
+  getSatisfactionAttrition,
+  getWorkLifeAttrition,
+} from '@/lib/analytics';
+import { AlertCircle, CheckCircle2, ShieldAlert, Sparkles, TrendingUp } from 'lucide-react';
 
 interface SectionViewProps {
   section: AnalysisSection;
@@ -22,9 +30,18 @@ export default function SectionView({
   const cardBg = isConsole ? '#161D24' : '#1E293B';
   const borderCol = isConsole ? '#364350' : 'rgba(255, 255, 255, 0.08)';
   const labelCol = isConsole ? '#8A9BA8' : '#94A3B8';
+  const titleCol = isConsole ? '#EDE6D6' : '#F1F5F9';
 
   const stats = computeStatisticalTests(records);
   const priorities = computeRetentionPriorities(records);
+  const commute = getCommuteAttrition(records);
+  const depts = getDepartmentAttrition(records);
+  const ot = getOvertimeAttrition(records);
+  const otNo = ot.find((o) => o.name.includes('No')) || { total: 0, departed: 0, retained: 0, rate: 0 };
+  const otYes = ot.find((o) => o.name.includes('Yes')) || { total: 0, departed: 0, retained: 0, rate: 0 };
+  const sat = getSatisfactionAttrition(records);
+  const wlb = getWorkLifeAttrition(records);
+  const inc = getIncomeByAttrition(records);
 
   const cardStyle: React.CSSProperties = {
     background: cardBg,
@@ -35,31 +52,115 @@ export default function SectionView({
   };
 
   switch (section) {
+    case 'Overview':
+      return (
+        <div style={cardStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div style={{ fontSize: '0.96rem', fontWeight: 700, color: titleCol }}>
+              Executive Overview • Workforce Intelligence &amp; Attrition Benchmark
+            </div>
+            <span
+              style={{
+                fontSize: '0.72rem',
+                padding: '3px 8px',
+                borderRadius: '4px',
+                background: 'rgba(59, 130, 246, 0.15)',
+                color: isConsole ? '#81A1C1' : '#60A5FA',
+                border: `1px solid ${isConsole ? '#4C7290' : 'rgba(96, 165, 250, 0.3)'}`,
+              }}
+            >
+              Benchmark Reference: 1,470 Personnel (16.12% Overall Attrition)
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
+              <div style={{ fontSize: '0.72rem', color: labelCol, fontWeight: 700 }}>ACTIVE RETENTION RATE</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: isConsole ? '#3DCC91' : '#34D399' }}>
+                {metrics.totalCount > 0 ? ((metrics.retainedCount / metrics.totalCount) * 100).toFixed(2) : '0.00'}%
+              </div>
+              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>{metrics.retainedCount.toLocaleString()} of {metrics.totalCount.toLocaleString()} employees</div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
+              <div style={{ fontSize: '0.72rem', color: labelCol, fontWeight: 700 }}>OBSERVED ATTRITION RATE</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: isConsole ? '#E57373' : '#F87171' }}>
+                {metrics.attritionRate.toFixed(2)}%
+              </div>
+              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>{metrics.departedCount.toLocaleString()} voluntary departures</div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
+              <div style={{ fontSize: '0.72rem', color: labelCol, fontWeight: 700 }}>OVERALL MEAN COMPENSATION</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: isConsole ? '#81A1C1' : '#60A5FA' }}>
+                ${Math.round(metrics.meanIncome).toLocaleString()}
+              </div>
+              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>Benchmark baseline: $6,502.93</div>
+            </div>
+          </div>
+
+          <div style={{ fontSize: '0.8rem', color: labelCol, lineHeight: 1.5 }}>
+            Operating departments: {depts.map((d) => `${d.name} (${d.rate.toFixed(1)}% attrition, ${d.total} staff)`).join(' • ')}.
+          </div>
+        </div>
+      );
+
+    case 'Workforce':
+      return (
+        <div style={cardStyle}>
+          <div style={{ fontSize: '0.96rem', fontWeight: 700, color: titleCol, marginBottom: '8px' }}>
+            Workforce Structural Segmentation &amp; Role Turnover
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+            {depts.map((d, idx) => (
+              <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
+                <div style={{ fontSize: '0.72rem', color: labelCol, fontWeight: 700, textTransform: 'uppercase' }}>{d.name}</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: d.rate > 18 ? (isConsole ? '#E57373' : '#F87171') : (isConsole ? '#3DCC91' : '#34D399') }}>
+                  {d.rate.toFixed(1)}%
+                </div>
+                <div style={{ fontSize: '0.72rem', color: '#64748B' }}>{d.departed} of {d.total} departed</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: '0.8rem', color: labelCol, lineHeight: 1.5 }}>
+            Turnover concentration varies significantly across job roles: Sales Representatives exhibit the highest observed turnover at 39.76%, followed by Laboratory Technicians (23.94%) and Human Resources specialists (23.08%).
+          </div>
+        </div>
+      );
+
     case 'Compensation':
       return (
         <div style={cardStyle}>
-          <div style={{ fontSize: '0.96rem', fontWeight: 700, color: '#F1F5F9', marginBottom: '8px' }}>
-            Compensation & Monthly Income Distribution
+          <div style={{ fontSize: '0.96rem', fontWeight: 700, color: titleCol, marginBottom: '8px' }}>
+            Compensation Equity &amp; Monthly Income Disparity Analysis
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
-              <div style={{ fontSize: '0.72rem', color: labelCol, fontWeight: 700 }}>OVERALL MEAN</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#60A5FA' }}>${Math.round(metrics.meanIncome).toLocaleString()}</div>
-              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>Active workforce baseline</div>
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
+              <div style={{ fontSize: '0.72rem', color: labelCol, fontWeight: 700 }}>OVERALL MEAN INCOME</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: isConsole ? '#81A1C1' : '#60A5FA' }}>
+                ${Math.round(inc.totalMean).toLocaleString()}
+              </div>
+              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>Active dataset mean ($6,502.93 baseline)</div>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
               <div style={{ fontSize: '0.72rem', color: labelCol, fontWeight: 700 }}>RETAINED WORKFORCE MEAN</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#34D399' }}>${Math.round(metrics.retainedMeanIncome).toLocaleString()}</div>
-              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>Continuing personnel average</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: isConsole ? '#3DCC91' : '#34D399' }}>
+                ${Math.round(inc.retainedMean).toLocaleString()}
+              </div>
+              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>Continuing staff ($6,832.74 baseline)</div>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
               <div style={{ fontSize: '0.72rem', color: labelCol, fontWeight: 700 }}>DEPARTED WORKFORCE MEAN</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#F87171' }}>${Math.round(metrics.departedMeanIncome).toLocaleString()}</div>
-              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>Disparity: -${Math.round(Math.abs(metrics.incomeGap)).toLocaleString()}</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: isConsole ? '#E57373' : '#F87171' }}>
+                ${Math.round(inc.departedMean).toLocaleString()}
+              </div>
+              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>
+                Observed gap: -${Math.round(Math.abs(inc.incomeGap)).toLocaleString()}
+              </div>
             </div>
           </div>
           <div style={{ fontSize: '0.8rem', color: labelCol, lineHeight: 1.5 }}>
-            Welch Two-Sample t-test: <strong style={{ color: '#F1F5F9' }}>t = {stats.tStat}</strong>, <strong style={{ color: '#F1F5F9' }}>p &lt; 0.001</strong>. Departing personnel exhibit significantly lower monthly compensation compared to continuing colleagues.
+            Welch Two-Sample t-test: <strong style={{ color: titleCol }}>t = {stats.tStat.toFixed(2)}</strong>, <strong style={{ color: titleCol }}>p &lt; 0.001</strong>. Departing personnel exhibit statistically significantly lower monthly compensation on average compared to continuing employees.
           </div>
         </div>
       );
@@ -67,28 +168,61 @@ export default function SectionView({
     case 'Overtime':
       return (
         <div style={cardStyle}>
-          <div style={{ fontSize: '0.96rem', fontWeight: 700, color: '#F1F5F9', marginBottom: '8px' }}>
-            Workplace Overtime & Acute Attrition Exposure
+          <div style={{ fontSize: '0.96rem', fontWeight: 700, color: titleCol, marginBottom: '8px' }}>
+            Workplace Overtime &amp; Acute Attrition Exposure
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '12px' }}>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
               <div style={{ fontSize: '0.72rem', color: labelCol, fontWeight: 700 }}>OVERTIME = YES ATTRITION</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#F87171' }}>30.53%</div>
-              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>127 of 416 employees departed</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: isConsole ? '#E57373' : '#F87171' }}>
+                {otYes.rate.toFixed(2)}%
+              </div>
+              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>
+                {otYes.departed} of {otYes.total} employees departed
+              </div>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
               <div style={{ fontSize: '0.72rem', color: labelCol, fontWeight: 700 }}>OVERTIME = NO ATTRITION</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#34D399' }}>10.44%</div>
-              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>110 of 1,054 employees departed</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: isConsole ? '#3DCC91' : '#34D399' }}>
+                {otNo.rate.toFixed(2)}%
+              </div>
+              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>
+                {otNo.departed} of {otNo.total} employees departed
+              </div>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
-              <div style={{ fontSize: '0.72rem', color: labelCol, fontWeight: 700 }}>STATISTICAL SIGNIFICANCE</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FBBF24' }}>p &lt; 0.001</div>
-              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>Chi-Square = {stats.chiSquare}</div>
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
+              <div style={{ fontSize: '0.72rem', color: labelCol, fontWeight: 700 }}>STATISTICAL EVIDENCE (YATES χ²)</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: isConsole ? '#D4A359' : '#FBBF24' }}>
+                χ² = {stats.chiSquare.toFixed(2)}
+              </div>
+              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>p &lt; 0.001 (Yates corrected)</div>
             </div>
           </div>
           <div style={{ fontSize: '0.8rem', color: labelCol, lineHeight: 1.5 }}>
-            Mandatory overtime demonstrates a near-threefold elevation in observed employee turnover. Overtime rebalancing represents a high-impact immediate retention strategy.
+            Overtime assignment is one of the strongest observed attrition signals in this dataset. Personnel working overtime display an attrition rate nearly 3× higher (30.53% vs 10.44%) than non-overtime staff.
+          </div>
+        </div>
+      );
+
+    case 'Satisfaction':
+      return (
+        <div style={cardStyle}>
+          <div style={{ fontSize: '0.96rem', fontWeight: 700, color: titleCol, marginBottom: '8px' }}>
+            Employee Sentiment &amp; Work-Life Balance Correlation
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+            {sat.map((s, idx) => (
+              <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
+                <div style={{ fontSize: '0.72rem', color: labelCol, fontWeight: 700 }}>SATISFACTION {s.name.toUpperCase()}</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: s.rate >= 20 ? (isConsole ? '#E57373' : '#F87171') : s.rate >= 15 ? (isConsole ? '#D4A359' : '#FBBF24') : (isConsole ? '#3DCC91' : '#34D399') }}>
+                  {s.rate.toFixed(2)}%
+                </div>
+                <div style={{ fontSize: '0.72rem', color: '#64748B' }}>{s.departed} of {s.total} departed</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: '0.8rem', color: labelCol, lineHeight: 1.5 }}>
+            Work-Life Balance: Level 1 (Bad) shows 31.25% observed turnover, compared to 14.22% for Level 3 (Better). Poor work-life balance paired with low job satisfaction produces peak observed attrition risk (47.1%).
           </div>
         </div>
       );
@@ -96,33 +230,22 @@ export default function SectionView({
     case 'Commute':
       return (
         <div style={cardStyle}>
-          <div style={{ fontSize: '0.96rem', fontWeight: 700, color: '#F1F5F9', marginBottom: '8px' }}>
-            Commute Distance & Spatial Distribution
+          <div style={{ fontSize: '0.96rem', fontWeight: 700, color: titleCol, marginBottom: '8px' }}>
+            Commute Distance (DistanceFromHome) &amp; Spatial Risk Analysis
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '12px' }}>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
-              <div style={{ fontSize: '0.72rem', color: labelCol, fontWeight: 700 }}>0–5 KM</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#34D399' }}>13.77%</div>
-              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>88 of 639 departed</div>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
-              <div style={{ fontSize: '0.72rem', color: labelCol, fontWeight: 700 }}>6–10 KM</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#34D399' }}>12.82%</div>
-              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>41 of 320 departed</div>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
-              <div style={{ fontSize: '0.72rem', color: labelCol, fontWeight: 700 }}>11–20 KM</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FBBF24' }}>19.34%</div>
-              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>47 of 243 departed</div>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
-              <div style={{ fontSize: '0.72rem', color: labelCol, fontWeight: 700 }}>21+ KM</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#F87171' }}>22.06%</div>
-              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>61 of 268 departed</div>
-            </div>
+            {commute.map((c, idx) => (
+              <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '6px', border: `1px solid ${borderCol}` }}>
+                <div style={{ fontSize: '0.72rem', color: labelCol, fontWeight: 700 }}>{c.name.toUpperCase()}</div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: c.rate >= 20 ? (isConsole ? '#E57373' : '#F87171') : (isConsole ? '#3DCC91' : '#34D399') }}>
+                  {c.rate.toFixed(2)}%
+                </div>
+                <div style={{ fontSize: '0.72rem', color: '#64748B' }}>{c.departed} of {c.total} departed</div>
+              </div>
+            ))}
           </div>
           <div style={{ fontSize: '0.8rem', color: labelCol, lineHeight: 1.5 }}>
-            Long commutes (&gt; 20 km) correlate with an 8.29 percentage-point increase in observed attrition compared to close-proximity staff (0–5 km).
+            Longer commute distance is associated with higher observed attrition. Personnel in the extended 21+ km group exhibit a 22.06% turnover rate versus 13.77% for close-proximity staff (0–5 km).
           </div>
         </div>
       );
@@ -130,8 +253,8 @@ export default function SectionView({
     case 'Risk Signals':
       return (
         <div style={cardStyle}>
-          <div style={{ fontSize: '0.96rem', fontWeight: 700, color: '#F1F5F9', marginBottom: '8px' }}>
-            Retention Priority Board (Operational Risk Register)
+          <div style={{ fontSize: '0.96rem', fontWeight: 700, color: titleCol, marginBottom: '8px' }}>
+            Executive Retention Risk Register (Priority Signals)
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {priorities.map((p, idx) => (
@@ -150,10 +273,10 @@ export default function SectionView({
                 }}
               >
                 <div>
-                  <div style={{ fontSize: '0.74rem', color: labelCol, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    {p.category}
+                  <div style={{ fontSize: '0.72rem', color: labelCol, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    {idx + 1}. {p.category}
                   </div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#F1F5F9' }}>{p.factor}</div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: titleCol }}>{p.factor}</div>
                   <div style={{ fontSize: '0.78rem', color: '#94A3B8', marginTop: '2px' }}>{p.details}</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
@@ -170,7 +293,7 @@ export default function SectionView({
                           : p.level === 'WATCH'
                           ? 'rgba(245, 158, 11, 0.2)'
                           : 'rgba(59, 130, 246, 0.2)',
-                      color: p.level === 'HIGH' ? '#F87171' : p.level === 'WATCH' ? '#FBBF24' : '#60A5FA',
+                      color: p.level === 'HIGH' ? (isConsole ? '#E57373' : '#F87171') : p.level === 'WATCH' ? (isConsole ? '#D4A359' : '#FBBF24') : (isConsole ? '#81A1C1' : '#60A5FA'),
                       border: `1px solid ${
                         p.level === 'HIGH' ? '#EF4444' : p.level === 'WATCH' ? '#F59E0B' : '#3B82F6'
                       }`,
@@ -179,11 +302,14 @@ export default function SectionView({
                     {p.level} RISK
                   </span>
                   <div style={{ fontSize: '0.76rem', color: '#64748B', marginTop: '4px' }}>
-                    {p.rate.toFixed(1)}% rate ({p.benchmarkDiff > 0 ? `+${p.benchmarkDiff.toFixed(1)}%` : `${p.benchmarkDiff.toFixed(1)}%`})
+                    Observed rate: {p.rate.toFixed(2)}% ({p.benchmarkDiff > 0 ? `+${p.benchmarkDiff.toFixed(2)}%` : `${p.benchmarkDiff.toFixed(2)}%`})
                   </div>
                 </div>
               </div>
             ))}
+          </div>
+          <div style={{ fontSize: '0.74rem', color: '#64748B', marginTop: '12px' }}>
+            ⚠️ <em>Observational Notice: These empirical signals indicate observed turnover differences in historical personnel records and do not establish independent mechanical causation.</em>
           </div>
         </div>
       );
@@ -191,52 +317,56 @@ export default function SectionView({
     case 'Evidence':
       return (
         <div style={cardStyle}>
-          <div style={{ fontSize: '0.96rem', fontWeight: 700, color: '#F1F5F9', marginBottom: '8px' }}>
-            Statistical Evidence & Hypothesis Verification
+          <div style={{ fontSize: '0.96rem', fontWeight: 700, color: titleCol, marginBottom: '8px' }}>
+            Statistical Evidence &amp; Empirical Hypothesis Verification
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', color: '#F1F5F9', marginTop: '10px' }}>
-            <thead>
-              <tr style={{ borderBottom: `1px solid ${borderCol}`, textAlign: 'left', color: labelCol }}>
-                <th style={{ padding: '8px 10px' }}>Hypothesis / Dimension</th>
-                <th style={{ padding: '8px 10px' }}>Statistical Test</th>
-                <th style={{ padding: '8px 10px' }}>Test Value</th>
-                <th style={{ padding: '8px 10px' }}>p-Value</th>
-                <th style={{ padding: '8px 10px' }}>Conclusion</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style={{ borderBottom: `1px solid rgba(255,255,255,0.04)` }}>
-                <td style={{ padding: '10px' }}>Compensation Disparity</td>
-                <td style={{ padding: '10px' }}>Welch Two-Sample t-test</td>
-                <td style={{ padding: '10px' }}>t = {stats.tStat}</td>
-                <td style={{ padding: '10px', color: '#34D399', fontWeight: 700 }}>p &lt; 0.001</td>
-                <td style={{ padding: '10px' }}>Statistically Significant Disparity</td>
-              </tr>
-              <tr style={{ borderBottom: `1px solid rgba(255,255,255,0.04)` }}>
-                <td style={{ padding: '10px' }}>Workplace Overtime</td>
-                <td style={{ padding: '10px' }}>Chi-Square Independence</td>
-                <td style={{ padding: '10px' }}>χ² = {stats.chiSquare}</td>
-                <td style={{ padding: '10px', color: '#34D399', fontWeight: 700 }}>p &lt; 0.001</td>
-                <td style={{ padding: '10px' }}>Strong Statistical Dependency</td>
-              </tr>
-              <tr style={{ borderBottom: `1px solid rgba(255,255,255,0.04)` }}>
-                <td style={{ padding: '10px' }}>Service Tenure Window</td>
-                <td style={{ padding: '10px' }}>Categorical Comparison</td>
-                <td style={{ padding: '10px' }}>0-2 yrs: 29.82%</td>
-                <td style={{ padding: '10px', color: '#34D399', fontWeight: 700 }}>p &lt; 0.001</td>
-                <td style={{ padding: '10px' }}>Early-Career Flight Window</td>
-              </tr>
-              <tr>
-                <td style={{ padding: '10px' }}>Spatial Commute</td>
-                <td style={{ padding: '10px' }}>Band Comparison</td>
-                <td style={{ padding: '10px' }}>&gt;20 km vs &lt;5 km</td>
-                <td style={{ padding: '10px', color: '#34D399', fontWeight: 700 }}>p &lt; 0.01</td>
-                <td style={{ padding: '10px' }}>Distance Correlates with Turnover</td>
-              </tr>
-            </tbody>
-          </table>
+
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', color: titleCol, marginTop: '8px' }}>
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${borderCol}`, textAlign: 'left', color: labelCol }}>
+                  <th style={{ padding: '8px 10px' }}>Hypothesis / Test</th>
+                  <th style={{ padding: '8px 10px' }}>Statistical Test</th>
+                  <th style={{ padding: '8px 10px' }}>Test Value</th>
+                  <th style={{ padding: '8px 10px' }}>p-Value</th>
+                  <th style={{ padding: '8px 10px' }}>Analytical Interpretation</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style={{ borderBottom: `1px solid rgba(255,255,255,0.04)` }}>
+                  <td style={{ padding: '10px' }}>Overtime Exposure × Attrition</td>
+                  <td style={{ padding: '10px' }}>Chi-Square Independence (Yates Continuity Correction)</td>
+                  <td style={{ padding: '10px', fontWeight: 700 }}>χ² = {stats.chiSquare.toFixed(2)}</td>
+                  <td style={{ padding: '10px', color: isConsole ? '#3DCC91' : '#34D399', fontWeight: 700 }}>p &lt; 0.001</td>
+                  <td style={{ padding: '10px' }}>Overtime assignment exhibits statistically significant association with departure risk.</td>
+                </tr>
+                <tr style={{ borderBottom: `1px solid rgba(255,255,255,0.04)` }}>
+                  <td style={{ padding: '10px' }}>Monthly Income × Attrition</td>
+                  <td style={{ padding: '10px' }}>Welch Two-Sample t-test (Unequal Variances)</td>
+                  <td style={{ padding: '10px', fontWeight: 700 }}>t = {stats.tStat.toFixed(2)}</td>
+                  <td style={{ padding: '10px', color: isConsole ? '#3DCC91' : '#34D399', fontWeight: 700 }}>p &lt; 0.001</td>
+                  <td style={{ padding: '10px' }}>Departed workforce displays significantly lower mean compensation ($4,787 vs $6,833).</td>
+                </tr>
+                <tr style={{ borderBottom: `1px solid rgba(255,255,255,0.04)` }}>
+                  <td style={{ padding: '10px' }}>Early Service Flight Window</td>
+                  <td style={{ padding: '10px' }}>Categorical Cohort Rate Comparison</td>
+                  <td style={{ padding: '10px', fontWeight: 700 }}>0–2 yrs: 29.82%</td>
+                  <td style={{ padding: '10px', color: isConsole ? '#3DCC91' : '#34D399', fontWeight: 700 }}>p &lt; 0.001</td>
+                  <td style={{ padding: '10px' }}>First 24 months of tenure correlate with elevated observed turnover.</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: '10px' }}>Commute Distance Elevation</td>
+                  <td style={{ padding: '10px' }}>Distance Group Comparison (21+ km vs 0–5 km)</td>
+                  <td style={{ padding: '10px', fontWeight: 700 }}>22.06% vs 13.77%</td>
+                  <td style={{ padding: '10px', color: isConsole ? '#3DCC91' : '#34D399', fontWeight: 700 }}>p &lt; 0.01</td>
+                  <td style={{ padding: '10px' }}>Extended commute distances display higher observed turnover.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
           <div style={{ fontSize: '0.74rem', color: '#64748B', marginTop: '12px' }}>
-            ⚠️ <em>Observational Disclaimer: All statistical tests indicate empirical correlation within the benchmark population and do not establish direct mechanical causation.</em>
+            ⚠️ <em>Observational Disclaimer: All statistical tests reflect empirical associations within historical HR records and do not assert independent mechanical causation.</em>
           </div>
         </div>
       );

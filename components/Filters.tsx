@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { EmployeeRecord, FilterState, ThemeMode } from '@/lib/types';
-import { ChevronDown, RotateCcw } from 'lucide-react';
+import { ChevronDown, Filter, RotateCcw } from 'lucide-react';
 
 interface FiltersProps {
   records: EmployeeRecord[];
@@ -52,6 +52,16 @@ export default function Filters({
 
   const overtimes = ['All', 'Yes', 'No'];
   const travels = ['All', 'Travel_Rarely', 'Travel_Frequently', 'Non-Travel'];
+  const genders = ['All', 'Female', 'Male'];
+  const attritions = ['All', 'Yes', 'No'];
+
+  const isFiltered =
+    filters.department !== 'All' ||
+    filters.jobRole !== 'All' ||
+    filters.overtime !== 'All' ||
+    filters.businessTravel !== 'All' ||
+    filters.gender !== 'All' ||
+    filters.attrition !== 'All';
 
   const handleReset = () => {
     setFilters({
@@ -59,6 +69,8 @@ export default function Filters({
       jobRole: 'All',
       overtime: 'All',
       businessTravel: 'All',
+      gender: 'All',
+      attrition: 'All',
     });
   };
 
@@ -74,22 +86,59 @@ export default function Filters({
     >
       <div
         style={{
-          fontSize: '0.72rem',
-          fontWeight: 700,
-          color: labelCol,
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
-          marginBottom: '8px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '10px',
         }}
       >
-        FILTER WORKFORCE
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Filter size={13} style={{ color: isConsole ? '#D4A359' : '#F59E0B' }} />
+          <span
+            style={{
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              color: labelCol,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+            }}
+          >
+            WORKFORCE FILTER CONSOLE
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span
+            style={{
+              fontSize: '0.72rem',
+              padding: '2px 8px',
+              borderRadius: '4px',
+              background: isFiltered
+                ? isConsole ? 'rgba(212, 163, 89, 0.15)' : 'rgba(245, 158, 11, 0.15)'
+                : 'rgba(255, 255, 255, 0.04)',
+              color: isFiltered
+                ? isConsole ? '#D4A359' : '#FBBF24'
+                : '#94A3B8',
+              border: `1px solid ${
+                isFiltered
+                  ? isConsole ? '#D4A359' : '#F59E0B'
+                  : 'rgba(255, 255, 255, 0.06)'
+              }`,
+              fontWeight: 600,
+            }}
+          >
+            {isFiltered
+              ? `Filtered Workforce: ${filteredCount.toLocaleString()} of ${totalCount.toLocaleString()} Personnel`
+              : `Full Benchmark Cohort: ${totalCount.toLocaleString()} Personnel`}
+          </span>
+        </div>
       </div>
 
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr)) 100px',
-          gap: '12px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr)) 100px',
+          gap: '10px',
           alignItems: 'end',
         }}
       >
@@ -97,7 +146,7 @@ export default function Filters({
         <div>
           <label
             htmlFor="filter-department-select"
-            style={{ fontSize: '0.75rem', color: labelCol, display: 'block', marginBottom: '4px' }}
+            style={{ fontSize: '0.72rem', color: labelCol, display: 'block', marginBottom: '3px' }}
           >
             Department
           </label>
@@ -109,7 +158,7 @@ export default function Filters({
                 setFilters((prev) => ({
                   ...prev,
                   department: e.target.value,
-                  jobRole: 'All', // Reset role on department change
+                  jobRole: 'All',
                 }));
               }}
               style={{
@@ -118,9 +167,9 @@ export default function Filters({
                 background: selectBg,
                 border: `1px solid ${borderCol}`,
                 borderRadius: '6px',
-                padding: '0 28px 0 10px',
+                padding: '0 26px 0 8px',
                 color: '#F1F5F9',
-                fontSize: '0.82rem',
+                fontSize: '0.8rem',
                 appearance: 'none',
                 cursor: 'pointer',
                 outline: 'none',
@@ -133,7 +182,7 @@ export default function Filters({
               ))}
             </select>
             <ChevronDown
-              size={14}
+              size={13}
               style={{
                 position: 'absolute',
                 right: '8px',
@@ -149,25 +198,27 @@ export default function Filters({
         {/* 2. Job Role */}
         <div>
           <label
-            htmlFor="filter-job-role-select"
-            style={{ fontSize: '0.75rem', color: labelCol, display: 'block', marginBottom: '4px' }}
+            htmlFor="filter-jobrole-select"
+            style={{ fontSize: '0.72rem', color: labelCol, display: 'block', marginBottom: '3px' }}
           >
             Job Role
           </label>
           <div style={{ position: 'relative' }}>
             <select
-              id="filter-job-role-select"
+              id="filter-jobrole-select"
               value={filters.jobRole}
-              onChange={(e) => setFilters((prev) => ({ ...prev, jobRole: e.target.value }))}
+              onChange={(e) => {
+                setFilters((prev) => ({ ...prev, jobRole: e.target.value }));
+              }}
               style={{
                 width: '100%',
                 height: '36px',
                 background: selectBg,
                 border: `1px solid ${borderCol}`,
                 borderRadius: '6px',
-                padding: '0 28px 0 10px',
+                padding: '0 26px 0 8px',
                 color: '#F1F5F9',
-                fontSize: '0.82rem',
+                fontSize: '0.8rem',
                 appearance: 'none',
                 cursor: 'pointer',
                 outline: 'none',
@@ -180,7 +231,7 @@ export default function Filters({
               ))}
             </select>
             <ChevronDown
-              size={14}
+              size={13}
               style={{
                 position: 'absolute',
                 right: '8px',
@@ -197,7 +248,7 @@ export default function Filters({
         <div>
           <label
             htmlFor="filter-overtime-select"
-            style={{ fontSize: '0.75rem', color: labelCol, display: 'block', marginBottom: '4px' }}
+            style={{ fontSize: '0.72rem', color: labelCol, display: 'block', marginBottom: '3px' }}
           >
             OverTime
           </label>
@@ -205,16 +256,18 @@ export default function Filters({
             <select
               id="filter-overtime-select"
               value={filters.overtime}
-              onChange={(e) => setFilters((prev) => ({ ...prev, overtime: e.target.value }))}
+              onChange={(e) => {
+                setFilters((prev) => ({ ...prev, overtime: e.target.value }));
+              }}
               style={{
                 width: '100%',
                 height: '36px',
                 background: selectBg,
                 border: `1px solid ${borderCol}`,
                 borderRadius: '6px',
-                padding: '0 28px 0 10px',
+                padding: '0 26px 0 8px',
                 color: '#F1F5F9',
-                fontSize: '0.82rem',
+                fontSize: '0.8rem',
                 appearance: 'none',
                 cursor: 'pointer',
                 outline: 'none',
@@ -222,12 +275,12 @@ export default function Filters({
             >
               {overtimes.map((o) => (
                 <option key={o} value={o} style={{ background: '#0D1117' }}>
-                  {o}
+                  {o === 'All' ? 'All OverTime' : `OverTime: ${o}`}
                 </option>
               ))}
             </select>
             <ChevronDown
-              size={14}
+              size={13}
               style={{
                 position: 'absolute',
                 right: '8px',
@@ -243,25 +296,27 @@ export default function Filters({
         {/* 4. Business Travel */}
         <div>
           <label
-            htmlFor="filter-business-travel-select"
-            style={{ fontSize: '0.75rem', color: labelCol, display: 'block', marginBottom: '4px' }}
+            htmlFor="filter-travel-select"
+            style={{ fontSize: '0.72rem', color: labelCol, display: 'block', marginBottom: '3px' }}
           >
             Business Travel
           </label>
           <div style={{ position: 'relative' }}>
             <select
-              id="filter-business-travel-select"
+              id="filter-travel-select"
               value={filters.businessTravel}
-              onChange={(e) => setFilters((prev) => ({ ...prev, businessTravel: e.target.value }))}
+              onChange={(e) => {
+                setFilters((prev) => ({ ...prev, businessTravel: e.target.value }));
+              }}
               style={{
                 width: '100%',
                 height: '36px',
                 background: selectBg,
                 border: `1px solid ${borderCol}`,
                 borderRadius: '6px',
-                padding: '0 28px 0 10px',
+                padding: '0 26px 0 8px',
                 color: '#F1F5F9',
-                fontSize: '0.82rem',
+                fontSize: '0.8rem',
                 appearance: 'none',
                 cursor: 'pointer',
                 outline: 'none',
@@ -269,12 +324,12 @@ export default function Filters({
             >
               {travels.map((t) => (
                 <option key={t} value={t} style={{ background: '#0D1117' }}>
-                  {t}
+                  {t.replace(/_/g, ' ')}
                 </option>
               ))}
             </select>
             <ChevronDown
-              size={14}
+              size={13}
               style={{
                 position: 'absolute',
                 right: '8px',
@@ -287,35 +342,138 @@ export default function Filters({
           </div>
         </div>
 
-        {/* 5. Reset Filters Button */}
+        {/* 5. Gender */}
+        <div>
+          <label
+            htmlFor="filter-gender-select"
+            style={{ fontSize: '0.72rem', color: labelCol, display: 'block', marginBottom: '3px' }}
+          >
+            Gender
+          </label>
+          <div style={{ position: 'relative' }}>
+            <select
+              id="filter-gender-select"
+              value={filters.gender}
+              onChange={(e) => {
+                setFilters((prev) => ({ ...prev, gender: e.target.value }));
+              }}
+              style={{
+                width: '100%',
+                height: '36px',
+                background: selectBg,
+                border: `1px solid ${borderCol}`,
+                borderRadius: '6px',
+                padding: '0 26px 0 8px',
+                color: '#F1F5F9',
+                fontSize: '0.8rem',
+                appearance: 'none',
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              {genders.map((g) => (
+                <option key={g} value={g} style={{ background: '#0D1117' }}>
+                  {g === 'All' ? 'All Genders' : g}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={13}
+              style={{
+                position: 'absolute',
+                right: '8px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: labelCol,
+                pointerEvents: 'none',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* 6. Attrition Status */}
+        <div>
+          <label
+            htmlFor="filter-attrition-select"
+            style={{ fontSize: '0.72rem', color: labelCol, display: 'block', marginBottom: '3px' }}
+          >
+            Attrition
+          </label>
+          <div style={{ position: 'relative' }}>
+            <select
+              id="filter-attrition-select"
+              value={filters.attrition}
+              onChange={(e) => {
+                setFilters((prev) => ({ ...prev, attrition: e.target.value }));
+              }}
+              style={{
+                width: '100%',
+                height: '36px',
+                background: selectBg,
+                border: `1px solid ${borderCol}`,
+                borderRadius: '6px',
+                padding: '0 26px 0 8px',
+                color: '#F1F5F9',
+                fontSize: '0.8rem',
+                appearance: 'none',
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              {attritions.map((a) => (
+                <option key={a} value={a} style={{ background: '#0D1117' }}>
+                  {a === 'All' ? 'All Status' : a === 'Yes' ? 'Departed (Yes)' : 'Retained (No)'}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={13}
+              style={{
+                position: 'absolute',
+                right: '8px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: labelCol,
+                pointerEvents: 'none',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* 7. Reset Button */}
         <div>
           <button
             onClick={handleReset}
+            disabled={!isFiltered}
             style={{
               width: '100%',
               height: '36px',
-              background: 'rgba(59, 130, 246, 0.1)',
-              border: '1px solid rgba(59, 130, 246, 0.3)',
+              background: isFiltered
+                ? isConsole ? 'rgba(212, 163, 89, 0.15)' : 'rgba(245, 158, 11, 0.15)'
+                : 'rgba(255, 255, 255, 0.04)',
+              border: `1px solid ${
+                isFiltered
+                  ? isConsole ? '#D4A359' : '#F59E0B'
+                  : borderCol
+              }`,
               borderRadius: '6px',
-              color: '#60A5FA',
-              fontSize: '0.82rem',
+              color: isFiltered
+                ? isConsole ? '#D4A359' : '#FBBF24'
+                : '#64748B',
+              fontSize: '0.78rem',
               fontWeight: 600,
+              cursor: isFiltered ? 'pointer' : 'not-allowed',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '6px',
-              cursor: 'pointer',
               transition: 'all 0.15s ease',
             }}
           >
-            <RotateCcw size={14} />
+            <RotateCcw size={12} />
             Reset
           </button>
         </div>
-      </div>
-
-      <div style={{ fontSize: '0.74rem', color: '#64748B', marginTop: '8px' }}>
-        Showing {filteredCount.toLocaleString()} of {totalCount.toLocaleString()} employees
       </div>
     </div>
   );

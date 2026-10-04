@@ -37,7 +37,8 @@ export interface EmployeeRecord {
   Attrition_Num: number;
   TenureRatio: number;
   TenureGroup: string;
-  DistanceBand: string;
+  DistanceGroup: string;
+  DistanceBand?: string;
   [key: string]: any;
 }
 
@@ -72,6 +73,8 @@ export interface FilterState {
   jobRole: string;
   overtime: string;
   businessTravel: string;
+  gender: string;
+  attrition: string;
 }
 
 export interface KPIMetrics {
