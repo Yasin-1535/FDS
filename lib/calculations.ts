@@ -154,11 +154,17 @@ export function computeStatisticalTests(records: EmployeeRecord[]): StatisticalT
       const expYesRet = (rowYes * colRet) / totalN;
       const expYesDep = (rowYes * colDep) / totalN;
 
+      // Apply Yates's continuity correction (matching SciPy stats.chi2_contingency default for 2x2 table)
+      const yatesDiff = (obs: number, exp: number) => {
+        const diff = Math.max(0, Math.abs(obs - exp) - 0.5);
+        return (diff * diff) / exp;
+      };
+
       chiSquare =
-        Math.pow(noRet - expNoRet, 2) / expNoRet +
-        Math.pow(noDep - expNoDep, 2) / expNoDep +
-        Math.pow(yesRet - expYesRet, 2) / expYesRet +
-        Math.pow(yesDep - expYesDep, 2) / expYesDep;
+        yatesDiff(noRet, expNoRet) +
+        yatesDiff(noDep, expNoDep) +
+        yatesDiff(yesRet, expYesRet) +
+        yatesDiff(yesDep, expYesDep);
     }
   }
 
