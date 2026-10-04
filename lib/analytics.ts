@@ -278,7 +278,185 @@ export function getOvertimeWorkLifeHeatmap(records: EmployeeRecord[]) {
   };
 }
 
-// 10. Mean Monthly Income by Attrition Status
+// 10. Department × Overtime Attrition Heatmap (%)
+export function getDepartmentOvertimeHeatmap(records: EmployeeRecord[]) {
+  const depts = ['Human Resources', 'Research & Development', 'Sales'];
+  const ots = ['No Overtime', 'Works Overtime'];
+
+  const matrix: number[][] = [];
+  const textMatrix: string[][] = [];
+
+  depts.forEach((dept) => {
+    const rowRates: number[] = [];
+    const rowTexts: string[] = [];
+
+    ots.forEach((ot) => {
+      const isOT = ot === 'Works Overtime';
+      const subset = records.filter(
+        (r) =>
+          r.Department === dept &&
+          (String(r.OverTime).toLowerCase() === 'yes') === isOT
+      );
+      const total = subset.length;
+      const dep = subset.filter((r) => r.Attrition_Num === 1 || String(r.Attrition).toLowerCase() === 'yes').length;
+      const rate = total > 0 ? Number(((dep / total) * 100).toFixed(1)) : 0;
+      rowRates.push(rate);
+      rowTexts.push(`${rate.toFixed(1)}%<br>(${dep}/${total})`);
+    });
+
+    matrix.push(rowRates);
+    textMatrix.push(rowTexts);
+  });
+
+  return {
+    yLabels: depts,
+    xLabels: ots,
+    zValues: matrix,
+    textValues: textMatrix,
+  };
+}
+
+// 11. Department × BusinessTravel Attrition Heatmap (%)
+export function getDepartmentTravelHeatmap(records: EmployeeRecord[]) {
+  const depts = ['Human Resources', 'Research & Development', 'Sales'];
+  const travels = ['Non-Travel', 'Travel_Rarely', 'Travel_Frequently'];
+
+  const matrix: number[][] = [];
+  const textMatrix: string[][] = [];
+
+  depts.forEach((dept) => {
+    const rowRates: number[] = [];
+    const rowTexts: string[] = [];
+
+    travels.forEach((tr) => {
+      const subset = records.filter((r) => r.Department === dept && r.BusinessTravel === tr);
+      const total = subset.length;
+      const dep = subset.filter((r) => r.Attrition_Num === 1 || String(r.Attrition).toLowerCase() === 'yes').length;
+      const rate = total > 0 ? Number(((dep / total) * 100).toFixed(1)) : 0;
+      rowRates.push(rate);
+      rowTexts.push(`${rate.toFixed(1)}%<br>(${dep}/${total})`);
+    });
+
+    matrix.push(rowRates);
+    textMatrix.push(rowTexts);
+  });
+
+  return {
+    yLabels: depts,
+    xLabels: travels.map((t) => t.replace(/_/g, ' ')),
+    zValues: matrix,
+    textValues: textMatrix,
+  };
+}
+
+// 12. Job Level × Department Mean Compensation Heatmap ($)
+export function getJobLevelDepartmentIncomeHeatmap(records: EmployeeRecord[]) {
+  const depts = ['Human Resources', 'Research & Development', 'Sales'];
+  const levels = [1, 2, 3, 4, 5];
+
+  const matrix: number[][] = [];
+  const textMatrix: string[][] = [];
+
+  levels.forEach((lvl) => {
+    const rowIncomes: number[] = [];
+    const rowTexts: string[] = [];
+
+    depts.forEach((dept) => {
+      const subset = records.filter((r) => r.Department === dept && Number(r.JobLevel) === lvl);
+      const total = subset.length;
+      const sum = subset.reduce((acc, r) => acc + (Number(r.MonthlyIncome) || 0), 0);
+      const mean = total > 0 ? Math.round(sum / total) : 0;
+      rowIncomes.push(mean);
+      rowTexts.push(`$${mean.toLocaleString()}<br>(${total} staff)`);
+    });
+
+    matrix.push(rowIncomes);
+    textMatrix.push(rowTexts);
+  });
+
+  return {
+    yLabels: levels.map((l) => `Level ${l}`),
+    xLabels: depts,
+    zValues: matrix,
+    textValues: textMatrix,
+  };
+}
+
+// 13. Distance Group × Department Attrition Heatmap (%)
+export function getDistanceDepartmentHeatmap(records: EmployeeRecord[]) {
+  const groups = ['0–5 km', '6–10 km', '11–20 km', '21+ km'];
+  const depts = ['Human Resources', 'Research & Development', 'Sales'];
+
+  const matrix: number[][] = [];
+  const textMatrix: string[][] = [];
+
+  groups.forEach((g) => {
+    const rowRates: number[] = [];
+    const rowTexts: string[] = [];
+
+    depts.forEach((dept) => {
+      const subset = records.filter((r) => {
+        if (r.Department !== dept) return false;
+        const norm = normalizeGroupStr(r.DistanceGroup || r.DistanceBand || '');
+        if (norm) return norm === g;
+        const d = Number(r.DistanceFromHome) || 0;
+        const derived = d <= 5 ? '0–5 km' : d <= 10 ? '6–10 km' : d <= 20 ? '11–20 km' : '21+ km';
+        return derived === g;
+      });
+      const total = subset.length;
+      const dep = subset.filter((r) => r.Attrition_Num === 1 || String(r.Attrition).toLowerCase() === 'yes').length;
+      const rate = total > 0 ? Number(((dep / total) * 100).toFixed(1)) : 0;
+      rowRates.push(rate);
+      rowTexts.push(`${rate.toFixed(1)}%<br>(${dep}/${total})`);
+    });
+
+    matrix.push(rowRates);
+    textMatrix.push(rowTexts);
+  });
+
+  return {
+    yLabels: groups,
+    xLabels: depts,
+    zValues: matrix,
+    textValues: textMatrix,
+  };
+}
+
+// 14. Mean Monthly Income by Job Level Progression (Retained vs Departed)
+export function getJobLevelIncomeProgression(records: EmployeeRecord[]) {
+  const levels = [1, 2, 3, 4, 5];
+  const retainedMeans: number[] = [];
+  const departedMeans: number[] = [];
+
+  levels.forEach((lvl) => {
+    const retSubset = records.filter(
+      (r) => Number(r.JobLevel) === lvl && (r.Attrition_Num === 0 && String(r.Attrition).toLowerCase() !== 'yes')
+    );
+    const depSubset = records.filter(
+      (r) => Number(r.JobLevel) === lvl && (r.Attrition_Num === 1 || String(r.Attrition).toLowerCase() === 'yes')
+    );
+
+    const retMean =
+      retSubset.length > 0
+        ? Math.round(retSubset.reduce((a, b) => a + (Number(b.MonthlyIncome) || 0), 0) / retSubset.length)
+        : 0;
+    const depMean =
+      depSubset.length > 0
+        ? Math.round(depSubset.reduce((a, b) => a + (Number(b.MonthlyIncome) || 0), 0) / depSubset.length)
+        : 0;
+
+    retainedMeans.push(retMean);
+    departedMeans.push(depMean);
+  });
+
+  return {
+    levels: levels.map((l) => `Level ${l}`),
+    retainedMeans,
+    departedMeans,
+  };
+}
+
+// 15. Mean Monthly Income by Attrition Status
 export function getIncomeByAttrition(records: EmployeeRecord[]) {
   const retained: number[] = [];
   const departed: number[] = [];
@@ -306,7 +484,7 @@ export function getIncomeByAttrition(records: EmployeeRecord[]) {
   };
 }
 
-// 11. Mean Monthly Income by Job Role
+// 16. Mean Monthly Income by Job Role
 export function getIncomeByJobRole(records: EmployeeRecord[]) {
   const map: { [role: string]: { total: number; sum: number } } = {};
 
@@ -326,7 +504,7 @@ export function getIncomeByJobRole(records: EmployeeRecord[]) {
     .sort((a, b) => b.meanIncome - a.meanIncome);
 }
 
-// 12. Income Distribution Bins
+// 17. Income Distribution Bins
 export function getIncomeDistributionBins(records: EmployeeRecord[]) {
   const bins = [
     { label: '< $2.5k', min: 0, max: 2500, retained: 0, departed: 0 },
@@ -352,10 +530,10 @@ export function getIncomeDistributionBins(records: EmployeeRecord[]) {
   return bins;
 }
 
-// 13. Income vs YearsAtCompany Scatter Points
+// 18. Income vs YearsAtCompany Scatter Points
 export function getIncomeScatterPoints(records: EmployeeRecord[], maxPoints = 800) {
   const step = Math.max(1, Math.floor(records.length / maxPoints));
-  const points: { x: number; y: number; attrition: string; role: string }[] = [];
+  const points: { x: number; y: number; attrition: string; role: string; age: number; commute: number }[] = [];
 
   for (let i = 0; i < records.length; i += step) {
     const r = records[i];
@@ -364,13 +542,15 @@ export function getIncomeScatterPoints(records: EmployeeRecord[], maxPoints = 80
       y: Number(r.MonthlyIncome) || 0,
       attrition: r.Attrition_Num === 1 || String(r.Attrition).toLowerCase() === 'yes' ? 'Departed' : 'Retained',
       role: r.JobRole || 'Unknown',
+      age: Number(r.Age) || 35,
+      commute: Number(r.DistanceFromHome) || 0,
     });
   }
 
   return points;
 }
 
-// 14. Commute Distance Box Plot & Binned Distribution
+// 19. Commute Distance Box Plot & Binned Distribution
 export function getCommuteDetails(records: EmployeeRecord[]) {
   const retainedDist: number[] = [];
   const departedDist: number[] = [];
@@ -389,7 +569,7 @@ export function getCommuteDetails(records: EmployeeRecord[]) {
   };
 }
 
-// 15. Demographic & Workforce Distributions
+// 20. Demographic & Workforce Distributions
 export function getWorkforceDemographics(records: EmployeeRecord[]) {
   const genderMap: { [g: string]: { total: number; departed: number } } = {};
   const travelMap: { [t: string]: { total: number; departed: number } } = {};
@@ -440,4 +620,144 @@ export function getWorkforceDemographics(records: EmployeeRecord[]) {
       rate: Number(((eduFieldMap[k].departed / (eduFieldMap[k].total || 1)) * 100).toFixed(2)),
     })),
   };
+}
+
+// 21. Multi-Risk Signal Accumulation & Co-occurrence Metrics
+export function getRiskFlagMetrics(records: EmployeeRecord[]) {
+  const flagDistribution: { [flags: number]: { count: number; departed: number } } = {
+    0: { count: 0, departed: 0 },
+    1: { count: 0, departed: 0 },
+    2: { count: 0, departed: 0 },
+    3: { count: 0, departed: 0 },
+    4: { count: 0, departed: 0 },
+  };
+
+  const highRiskIncomes: number[] = [];
+  const watchRiskIncomes: number[] = [];
+  const lowRiskIncomes: number[] = [];
+
+  for (const r of records) {
+    let count = 0;
+    if (String(r.OverTime).toLowerCase() === 'yes') count++;
+    if (Number(r.WorkLifeBalance) === 1) count++;
+    if (Number(r.YearsAtCompany) <= 2) count++;
+    if (Number(r.DistanceFromHome) > 20) count++;
+    if (Number(r.JobSatisfaction) === 1) count++;
+    if (r.JobRole === 'Sales Representative') count++;
+
+    const clamped = Math.min(4, count);
+    flagDistribution[clamped].count++;
+
+    const isDep = r.Attrition_Num === 1 || String(r.Attrition).toLowerCase() === 'yes';
+    if (isDep) flagDistribution[clamped].departed++;
+
+    const inc = Number(r.MonthlyIncome) || 0;
+    if (count >= 2) highRiskIncomes.push(inc);
+    else if (count === 1) watchRiskIncomes.push(inc);
+    else lowRiskIncomes.push(inc);
+  }
+
+  const breakdown = [0, 1, 2, 3, 4].map((f) => {
+    const c = flagDistribution[f].count;
+    const d = flagDistribution[f].departed;
+    const rate = c > 0 ? Number(((d / c) * 100).toFixed(1)) : 0;
+    return {
+      flagLabel: f === 4 ? '4+ Risk Factors' : `${f} Risk Factor${f === 1 ? '' : 's'}`,
+      count: c,
+      departed: d,
+      retained: c - d,
+      rate,
+    };
+  });
+
+  return {
+    breakdown,
+    highRiskIncomes,
+    watchRiskIncomes,
+    lowRiskIncomes,
+  };
+}
+
+// 22. Evidence: Chi-Square Contingency Residuals Heatmap
+export function getChiSquareResiduals(records: EmployeeRecord[]) {
+  let noRet = 0, noDep = 0, yesRet = 0, yesDep = 0;
+
+  for (const r of records) {
+    const isDep = r.Attrition_Num === 1 || String(r.Attrition).toLowerCase() === 'yes';
+    const isOT = String(r.OverTime).toLowerCase() === 'yes';
+    if (isDep) {
+      if (isOT) yesDep++;
+      else noDep++;
+    } else {
+      if (isOT) yesRet++;
+      else noRet++;
+    }
+  }
+
+  const totalN = noRet + noDep + yesRet + yesDep;
+  if (totalN === 0) {
+    return {
+      yLabels: ['No Overtime', 'Works Overtime'],
+      xLabels: ['Retained', 'Departed'],
+      zValues: [[0, 0], [0, 0]],
+      textValues: [['0', '0'], ['0', '0']],
+    };
+  }
+
+  const rowNo = noRet + noDep;
+  const rowYes = yesRet + yesDep;
+  const colRet = noRet + yesRet;
+  const colDep = noDep + yesDep;
+
+  const expNoRet = (rowNo * colRet) / totalN;
+  const expNoDep = (rowNo * colDep) / totalN;
+  const expYesRet = (rowYes * colRet) / totalN;
+  const expYesDep = (rowYes * colDep) / totalN;
+
+  const resNoRet = expNoRet > 0 ? (noRet - expNoRet) / Math.sqrt(expNoRet) : 0;
+  const resNoDep = expNoDep > 0 ? (noDep - expNoDep) / Math.sqrt(expNoDep) : 0;
+  const resYesRet = expYesRet > 0 ? (yesRet - expYesRet) / Math.sqrt(expYesRet) : 0;
+  const resYesDep = expYesDep > 0 ? (yesDep - expYesDep) / Math.sqrt(expYesDep) : 0;
+
+  return {
+    yLabels: ['No Overtime', 'Works Overtime'],
+    xLabels: ['Retained (No)', 'Departed (Yes)'],
+    zValues: [
+      [Number(resNoRet.toFixed(2)), Number(resNoDep.toFixed(2))],
+      [Number(resYesRet.toFixed(2)), Number(resYesDep.toFixed(2))],
+    ],
+    textValues: [
+      [`Obs: ${noRet}<br>Exp: ${expNoRet.toFixed(1)}<br>Res: ${resNoRet > 0 ? '+' : ''}${resNoRet.toFixed(2)}`, `Obs: ${noDep}<br>Exp: ${expNoDep.toFixed(1)}<br>Res: ${resNoDep > 0 ? '+' : ''}${resNoDep.toFixed(2)}`],
+      [`Obs: ${yesRet}<br>Exp: ${expYesRet.toFixed(1)}<br>Res: ${resYesRet > 0 ? '+' : ''}${resYesRet.toFixed(2)}`, `Obs: ${yesDep}<br>Exp: ${expYesDep.toFixed(1)}<br>Res: ${resYesDep > 0 ? '+' : ''}${resYesDep.toFixed(2)}`],
+    ],
+  };
+}
+
+// 23. Empirical Cumulative Distribution Function (ECDF) for Compensation
+export function getIncomeECDF(records: EmployeeRecord[]) {
+  const retIncomes = records
+    .filter((r) => r.Attrition_Num === 0 && String(r.Attrition).toLowerCase() !== 'yes')
+    .map((r) => Number(r.MonthlyIncome) || 0)
+    .sort((a, b) => a - b);
+
+  const depIncomes = records
+    .filter((r) => r.Attrition_Num === 1 || String(r.Attrition).toLowerCase() === 'yes')
+    .map((r) => Number(r.MonthlyIncome) || 0)
+    .sort((a, b) => a - b);
+
+  const step = 20;
+  const retPts: { x: number; y: number }[] = [];
+  const depPts: { x: number; y: number }[] = [];
+
+  for (let i = 0; i < retIncomes.length; i += Math.max(1, Math.floor(retIncomes.length / step))) {
+    retPts.push({ x: retIncomes[i], y: (i + 1) / retIncomes.length });
+  }
+  if (retIncomes.length > 0) retPts.push({ x: retIncomes[retIncomes.length - 1], y: 1.0 });
+
+  for (let i = 0; i < depIncomes.length; i += Math.max(1, Math.floor(depIncomes.length / step))) {
+    depPts.push({ x: depIncomes[i], y: (i + 1) / depIncomes.length });
+  }
+  if (depIncomes.length > 0) depPts.push({ x: depIncomes[depIncomes.length - 1], y: 1.0 });
+
+  return { retPts, depPts };
 }
