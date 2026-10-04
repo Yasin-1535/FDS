@@ -1,8 +1,10 @@
 # Predict & Retain — Workforce Intelligence & Employee Attrition Analytics
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)
-![Streamlit](https://img.shields.io/badge/Streamlit-1.25%2B-FF4B4B.svg)
-![Plotly](https://img.shields.io/badge/Plotly-5.15%2B-3F4F75.svg)
+![Next.js](https://img.shields.io/badge/Next.js-14.2-black.svg?logo=next.js)
+![React](https://img.shields.io/badge/React-18.3-blue.svg?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue.svg?logo=typescript)
+![Vercel](https://img.shields.io/badge/Deployment-Vercel%20Production%20Ready-black.svg?logo=vercel)
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg?logo=python)
 ![Tests](https://img.shields.io/badge/Tests-38%2F38%20Passing-success.svg)
 ![Status](https://img.shields.io/badge/Status-Complete%20%26%20Validated-success.svg)
 
@@ -12,7 +14,7 @@
 
 **Predict & Retain — Workforce Intelligence & Employee Attrition Analytics** is an end-to-end data-driven human resources analytics application designed to evaluate workforce attrition patterns, isolate operational risk factors, and empower decision-makers with empirical retention strategies.
 
-The project integrates an exploratory data analysis pipeline, inferential statistical modeling, automated unit testing, and an interactive executive command-center dashboard built with Streamlit.
+The project features a **Vercel-native Next.js web application** (React, TypeScript, Plotly, and serverless architecture) engineered for cloud deployment, alongside a Python analytics research pipeline, inferential statistical modeling, automated unit testing, and an offline Streamlit research dashboard.
 
 ---
 
@@ -35,7 +37,7 @@ Human resources leadership requires data-backed visibility into critical workfor
 1. **Quantify Attrition Benchmarks:** Measure baseline and disaggregated turnover metrics across business units (Research & Development, Sales, Human Resources) and nine organizational job roles.
 2. **Evaluate Compensation Architecture:** Analyze monthly income distributions, pay equity, and statistical significance tests across retention cohorts.
 3. **Assess Workplace Friction Factors:** Statistically evaluate observational correlations between overtime requirements, commute distances, and turnover rates.
-4. **Deliver an Enterprise Intelligence Dashboard:** Build an interactive Streamlit application (`dashboard/app.py`) featuring real-time KPI telemetry, dynamic filtering, multi-chart representation modes, and data export facilities.
+4. **Deliver a Production Vercel Web Application:** Deploy a serverless Next.js enterprise intelligence platform featuring real-time KPI telemetry, dynamic cascading filters, multi-chart representation modes, and CSV export facilities.
 5. **Provide Evidence-Based Retention Guidelines:** Translate empirical patterns into structured corporate HR interventions.
 
 ---
@@ -86,7 +88,7 @@ All findings reflect verified project figures across the benchmark population ($
 
 ## 🖥️ 6. Dashboard Architecture & Features
 
-The web analytics platform ([`dashboard/app.py`](dashboard/app.py)) provides an executive-grade command-center interface:
+The production web platform provides an executive-grade command-center interface:
 
 * **Interactive Workforce Filters:**
   - Cascading multi-select controls: Department, Job Role, OverTime, and Business Travel.
@@ -96,17 +98,18 @@ The web analytics platform ([`dashboard/app.py`](dashboard/app.py)) provides an 
   - **Visualization Type Selector:** Choose from 12 analytical modes (`ALL`, `Bar Chart`, `Line Chart`, `Histogram`, `Pie Chart`, `Scatter Plot`, `Box Plot`, `Heatmap`, `Grouped Bar Chart`, `Donut Chart`, `Area Chart`, `Choropleth Map`).
 * **Comprehensive `ALL` Visualization Mode:**
   - Selecting `ALL` renders an organized two-column analytical gallery of all supported chart types for the active analysis section.
-  - In single-chart mode, lazy evaluation computes only the requested figure to ensure zero dashboard rendering lag.
+  - In single-chart mode, lazy evaluation computes only the requested figure to ensure zero rendering lag.
 * **Choropleth Map Safe Fallback:**
   - The current HR dataset contains linear distance (`DistanceFromHome`), not geographic coordinates, shapefiles, or country/state codes.
   - The dashboard intentionally displays an informative explanation notice rather than fabricating synthetic geographic coordinates or misleading boundary maps.
 * **Dynamic Command KPI Cards:**
   - Real-time recalculation of Headcount, Departures, Observed Attrition %, and Mean Monthly Income based on active filter scope.
-* **Data Input & Benchmark Management:**
+* **Client-Side CSV Upload & Benchmark Management:**
   - Prominent single-file CSV upload terminal (`accept_multiple_files=False`) with automatic schema validation, column normalization, and instant metric recalculation.
+  - Ephemeral browser state ensures compatibility with serverless execution without requiring local filesystem persistence.
   - One-click benchmark restore button to seamlessly revert to original dataset state.
-* **Multi-Format Export Engine:**
-  - Direct in-memory export of the filtered workforce dataset to Clean CSV, Microsoft Excel (`.xlsx`), and Apache Parquet (`.parquet`).
+* **Export Engine:**
+  - Direct in-memory export of the filtered workforce dataset to Clean CSV.
 * **Dual Design Themes:**
   - Command-Center Dark Theme (default) with deep charcoal tones, amber/cyan telemetry indicators, and glassmorphic card borders.
   - Modern Analytics Theme with clean slate framing and refined contrast.
@@ -118,103 +121,116 @@ The web analytics platform ([`dashboard/app.py`](dashboard/app.py)) provides an 
 ```text
 FDS-Final-Project/
 │
+├── app/                              # Next.js App Router (Vercel Production Web Application)
+│   ├── api/dataset/route.ts          # Serverless endpoint returning benchmark data & telemetry
+│   ├── globals.css                   # Global CSS tokens, scrollbar styling & theme resets
+│   ├── layout.tsx                    # HTML shell, OpenGraph metadata & viewport configuration
+│   └── page.tsx                      # Root page serving the interactive Dashboard component
+│
+├── components/                       # Modular React / TypeScript UI components
+│   ├── charts/
+│   │   ├── ChartRenderer.tsx         # Unified 12-chart rendering engine & 2-column ALL gallery
+│   │   └── PlotlyChart.tsx           # Dynamic client Plotly wrapper with responsive resizing
+│   ├── Dashboard.tsx                 # Core application controller & client state coordinator
+│   ├── Filters.tsx                   # Cascading workforce filter bar with isolated reset button
+│   ├── Header.tsx                    # Executive brand header, telemetry indicator & data controls
+│   ├── KPIGrid.tsx                   # Dynamic 4-card telemetry display with baseline deltas
+│   ├── SectionView.tsx               # Contextual analytical narratives, statistics & risk register
+│   └── VisualizationSelector.tsx     # Precision-aligned 2-column primary workflow selector
+│
+├── lib/                              # Analytical calculations & data schemas
+│   ├── analytics.ts                  # Aggregation functions for chart distributions & metrics
+│   ├── benchmarkData.ts              # Pre-compiled benchmark dataset (1,470 records) for instant hydration
+│   ├── calculations.ts               # Welch t-test, Chi-Square, KPI math & CSV parser/validator
+│   └── types.ts                      # Strict TypeScript interfaces for HR records & metrics
+│
 ├── data/
 │   ├── original_dataset.csv          # Raw benchmark dataset (1,470 rows x 35 columns)
 │   └── final_dataset.csv             # Cleaned & feature-engineered dataset (1,470 rows x 39 columns)
 │
-├── dashboard/
-│   ├── app.py                        # Streamlit command-center analytics dashboard
+├── public/
+│   └── data/final_dataset.csv        # Static dataset asset for web access
+│
+├── dashboard/                        # Python Streamlit research dashboard
+│   ├── app.py                        # Streamlit workforce analytics application
 │   └── pipeline.py                   # Data ingestion, schema validation & charting engine
 │
 ├── notebooks/
 │   └── Predict_and_Retain_HR_Attrition.ipynb  # End-to-end executed Jupyter research notebook
 │
 ├── outputs/                          # 14 Publication-grade high-resolution charts (300 DPI)
-│   ├── attrition_department.png
-│   ├── attrition_distribution.png
-│   ├── attrition_jobrole.png
-│   ├── correlation_heatmap.png
-│   ├── distance_attrition.png
-│   ├── eda_charts.png
-│   ├── income_attrition.png
-│   ├── income_avg_attrition.png
-│   ├── income_distribution.png
-│   ├── overtime_attrition.png
-│   ├── satisfaction_attrition.png
-│   ├── tenure_attrition.png
-│   ├── tenureratio_attrition.png
-│   └── worklife_attrition.png
-│
-├── presentation/
-│   └── Predict_and_Retain.pptx       # Executive slide presentation deck
-│
-├── report/
-│   └── Final_Project_Report.docx     # Comprehensive academic & strategic research report
-│
-├── scripts/
-│   ├── generate_charts.py            # Automated chart rendering pipeline
-│   ├── build_notebook.py             # Notebook assembly script
-│   ├── generate_report.py            # Word report compilation script
-│   └── generate_presentation.py      # PowerPoint generation script
+├── presentation/                     # Executive presentation deck (Predict_and_Retain.pptx)
+├── report/                           # Formal research report (Final_Project_Report.docx)
+├── scripts/                          # Python generation & automation scripts
 │
 ├── tests/
 │   ├── test_data_pipeline.py         # Benchmark and feature transformation tests (10 tests)
 │   ├── test_upload_pipeline.py       # Custom upload and schema validation tests (15 tests)
 │   └── test_dashboard_ui.py          # State persistence, ALL mode & UI tests (13 tests)
 │
-├── requirements.txt                  # Pinned Python package dependencies
+├── package.json                      # Next.js, React, TypeScript, and Plotly dependencies
+├── tsconfig.json                     # TypeScript compiler configuration
+├── next.config.mjs                   # Next.js build configuration
+├── requirements.txt                  # Python dependencies
 ├── .gitignore                        # Git exclusion rules
 └── README.md                         # Unified project documentation
 ```
 
 ---
 
-## 💻 8. Installation & Setup
+## 💻 8. Installation & Local Development
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/Yasin-1535/FDS.git
-   cd FDS
-   ```
+### 1. Next.js Web Application (Recommended for Vercel)
 
-2. **Create and activate a virtual environment (optional but recommended):**
-   ```bash
-   python -m venv venv
-   # On Windows:
-   venv\Scripts\activate
-   # On macOS/Linux:
-   source venv/bin/activate
-   ```
+```bash
+# Clone the repository
+git clone https://github.com/Yasin-1535/FDS.git
+cd FDS
 
-3. **Install required dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+# Install Node dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) to view the application.
+
+To test the optimized production build locally:
+```bash
+npm run build
+npm run start
+```
+
+### 2. Python Environment (Research & Testing)
+
+```bash
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Run automated tests (38 tests)
+python -m unittest discover tests
+
+# Launch Streamlit research dashboard
+streamlit run dashboard/app.py
+```
 
 ---
 
-## 📊 9. Running the Application
+## 🚀 9. Vercel Deployment Guide
 
-### Launch Streamlit Dashboard
-```bash
-streamlit run dashboard/app.py
-```
-*(On Windows systems where script execution policies apply, run via the Python module):*
-```bash
-python -m streamlit run dashboard/app.py
-```
+This project is configured for **one-click deployment on Vercel**:
 
-Access the interactive dashboard at: `http://localhost:8501`
-
-### Run Jupyter Notebook
-```bash
-jupyter notebook notebooks/Predict_and_Retain_HR_Attrition.ipynb
-```
-
-### Re-render All Publication Charts
-```bash
-python scripts/generate_charts.py
-```
+1. **Log in to Vercel:** Go to [vercel.com](https://vercel.com) and connect your GitHub account.
+2. **Import Repository:** Select `Yasin-1535/FDS`.
+3. **Configure Project:**
+   - **Framework Preset:** `Next.js` (automatically detected)
+   - **Root Directory:** `./`
+   - **Build Command:** `npm run build` (default)
+   - **Output Directory:** `.next` (default)
+   - **Install Command:** `npm install` (default)
+4. **Environment Variables:** None required. The application runs completely self-contained with bundled benchmark data and client-side processing.
+5. **Deploy:** Click **Deploy**. Vercel will build and deploy the production web application within ~1 minute.
 
 ---
 
@@ -229,7 +245,7 @@ python -m unittest discover tests
 
 ### Verified Test Results:
 ```text
-Ran 38 tests in 34.108s
+Ran 38 tests in 31.266s
 OK
 ```
 
@@ -241,7 +257,7 @@ OK
 
 ## 🔒 11. Reproducibility & Environment
 
-* **Fully Self-Contained:** Runs completely locally using the included CSV datasets and standard open-source Python dependencies.
+* **Fully Self-Contained:** Runs completely locally using the included CSV datasets and standard open-source dependencies.
 * **Zero Credentials Required:** No external database connections, cloud storage tokens, or paid third-party API keys are required to execute any portion of the pipeline or dashboard.
 
 ---
